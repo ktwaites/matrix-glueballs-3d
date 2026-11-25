@@ -1,5 +1,5 @@
 module linalg
-    use iso_fortran_env, only : real32, real64
+    use iso_fortran_env, only : int32, real32, real64
     implicit none
 
     interface eigenpairs
@@ -30,6 +30,13 @@ module linalg
         module procedure hermc_complex64
     end interface
 
+    interface trace
+        module procedure trace_real32
+        module procedure trace_real64
+        module procedure trace_complex32
+        module procedure trace_complex64
+    end interface
+
     contains
 
     ! Output hermitian conjugate of matrix
@@ -47,6 +54,67 @@ module linalg
         complex(real64) :: hermc(size(matrix, dim=1), size(matrix, dim=2))
 
         hermc = conjg(transpose(matrix))
+    end function
+
+    ! Calculate normalised trace of matrix
+    function trace_real32(matrix) result(trace)
+        implicit none
+        real(real32), intent(in) :: matrix(:,:)
+        real(real32) :: trace
+
+        integer(int32) :: n, i
+
+        n = size(matrix, dim=1)
+        trace = 0.0_real32
+        do i = 1, n
+            trace = trace + matrix(i,i)
+        enddo
+        trace = trace / real(n, kind=real32)
+    end function
+
+    function trace_real64(matrix) result(trace)
+        implicit none
+        real(real64), intent(in) :: matrix(:,:)
+        real(real64) :: trace
+
+        integer(int32) :: n, i
+
+        n = size(matrix, dim=1)
+        trace = 0.0_real64
+        do i = 1, n
+            trace = trace + matrix(i,i)
+        enddo
+        trace = trace / real(n, kind=real64)
+    end function
+
+    function trace_complex32(matrix) result(trace)
+        implicit none
+        complex(real32), intent(in) :: matrix(:,:)
+        complex(real32) :: trace
+
+        integer(int32) :: n, i
+
+        n = size(matrix, dim=1)
+        trace = cmplx(0.0_real32, 0.0_real32, kind=real32)
+        do i = 1, n
+            trace = trace + matrix(i,i)
+        enddo
+        trace = trace / real(n, kind=real32)
+    end function
+
+    function trace_complex64(matrix) result(trace)
+        implicit none
+        complex(real64), intent(in) :: matrix(:,:)
+        complex(real64) :: trace
+
+        integer(int32) :: n, i
+
+        n = size(matrix, dim=1)
+        trace = cmplx(0.0_real64, 0.0_real64, kind=real64)
+        do i = 1, n
+            trace = trace + matrix(i,i)
+        enddo
+        trace = trace / real(n, kind=real64)
     end function
 
     ! Solve a general real system Ax=b using LAPACK routine SGESV.
