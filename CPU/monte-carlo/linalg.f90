@@ -18,6 +18,13 @@ module linalg
         module procedure solve_linear_system_complex64
     end interface
 
+    interface determinant
+        module procedure determinant_real32
+        module procedure determinant_complex32
+        module procedure determinant_real64
+        module procedure determinant_complex64
+    end interface
+
     contains
 
     ! Solve a general real system Ax=b using LAPACK routine SGESV.
@@ -163,6 +170,130 @@ module linalg
             error stop
         endif
     end function solve_linear_system_complex64
+
+    ! Calculate a real32 determinant using LAPACK routine SGETRF.
+    function determinant_real32(A) result(det)
+        implicit none
+
+        real(real32), intent(in) :: A(:,:)
+        real(real32) :: det
+
+        real(real32), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, i, info
+
+        n = size(A, 1)
+        if (n < 1 .or. size(A, 2) /= n) &
+        error stop "[Error][determinant]    A must be a non-empty square matrix"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        call SGETRF(n, n, Acopy, n, ipiv, info)
+
+        if (info < 0) then
+            write(*,'(a,i0)') '[Error][determinant]    SGETRF: illegal argument ', -info
+            error stop
+        endif
+
+        det = 1.0_real32
+        do i = 1, n
+            det = det * Acopy(i,i)
+            if (ipiv(i) /= i) det = -det
+        enddo
+    end function determinant_real32
+
+    ! Calculate a complex32 determinant using LAPACK routine CGETRF.
+    function determinant_complex32(A) result(det)
+        implicit none
+
+        complex(real32), intent(in) :: A(:,:)
+        complex(real32) :: det
+
+        complex(real32), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, i, info
+
+        n = size(A, 1)
+        if (n < 1 .or. size(A, 2) /= n) &
+        error stop "[Error][determinant]    A must be a non-empty square matrix"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        call CGETRF(n, n, Acopy, n, ipiv, info)
+
+        if (info < 0) then
+            write(*,'(a,i0)') '[Error][determinant]    CGETRF: illegal argument ', -info
+            error stop
+        endif
+
+        det = cmplx(1.0_real32, 0.0_real32, kind=real32)
+        do i = 1, n
+            det = det * Acopy(i,i)
+            if (ipiv(i) /= i) det = -det
+        enddo
+    end function determinant_complex32
+
+    ! Calculate a real64 determinant using LAPACK routine DGETRF.
+    function determinant_real64(A) result(det)
+        implicit none
+
+        real(real64), intent(in) :: A(:,:)
+        real(real64) :: det
+
+        real(real64), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, i, info
+
+        n = size(A, 1)
+        if (n < 1 .or. size(A, 2) /= n) &
+        error stop "[Error][determinant]    A must be a non-empty square matrix"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        call DGETRF(n, n, Acopy, n, ipiv, info)
+
+        if (info < 0) then
+            write(*,'(a,i0)') '[Error][determinant]    DGETRF: illegal argument ', -info
+            error stop
+        endif
+
+        det = 1.0_real64
+        do i = 1, n
+            det = det * Acopy(i,i)
+            if (ipiv(i) /= i) det = -det
+        enddo
+    end function determinant_real64
+
+    ! Calculate a complex64 determinant using LAPACK routine ZGETRF.
+    function determinant_complex64(A) result(det)
+        implicit none
+
+        complex(real64), intent(in) :: A(:,:)
+        complex(real64) :: det
+
+        complex(real64), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, i, info
+
+        n = size(A, 1)
+        if (n < 1 .or. size(A, 2) /= n) &
+        error stop "[Error][determinant]    A must be a non-empty square matrix"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        call ZGETRF(n, n, Acopy, n, ipiv, info)
+
+        if (info < 0) then
+            write(*,'(a,i0)') '[Error][determinant]    ZGETRF: illegal argument ', -info
+            error stop
+        endif
+
+        det = cmplx(1.0_real64, 0.0_real64, kind=real64)
+        do i = 1, n
+            det = det * Acopy(i,i)
+            if (ipiv(i) /= i) det = -det
+        enddo
+    end function determinant_complex64
 
     ! Return a list of evenly spaced real numbers in the interval [start, stop]
     function linspace(start, stop, num)
