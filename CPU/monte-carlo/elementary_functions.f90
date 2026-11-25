@@ -139,6 +139,4 @@ module elementary_functions
 
         exp_phase = cmplx(cos(theta), sin(theta), kind=real64)
     end function
-
-    
 end module
