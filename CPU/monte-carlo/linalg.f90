@@ -25,7 +25,29 @@ module linalg
         module procedure determinant_complex64
     end interface
 
+    interface hermc
+        module procedure hermc_complex32
+        module procedure hermc_complex64
+    end interface
+
     contains
+
+    ! Output hermitian conjugate of matrix
+    function hermc_complex32(matrix) result(hermc)
+        implicit none
+        complex(real32), intent(in) :: matrix(:,:)
+        complex(real32) :: hermc(size(matrix, dim=1), size(matrix, dim=2))
+
+        hermc = conjg(transpose(matrix))
+    end function
+
+    function hermc_complex64(matrix) result(hermc)
+        implicit none
+        complex(real64), intent(in) :: matrix(:,:)
+        complex(real64) :: hermc(size(matrix, dim=1), size(matrix, dim=2))
+
+        hermc = conjg(transpose(matrix))
+    end function
 
     ! Solve a general real system Ax=b using LAPACK routine SGESV.
     function solve_linear_system_real32(A, b) result(x)
