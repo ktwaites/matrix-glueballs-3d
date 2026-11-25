@@ -45,7 +45,7 @@ module matrix_glueball_3d_parameters
         character(len=*), intent(in) :: parameter_filename
 
         ! Define variables to read in from parameter file
-        namelist /params/ FILEPATH, FILENAME, NCOL, LS, LT, BETA, CONFIG_STEP, FILEPATH, FILENAME, &
+        namelist /params/ FILEPATH, FILENAME, NCOL, LS, LT, BETA, CONFIG_STEP, &
         CONFIG_START, BARE_MASS, TOL_CG, TOL_SVD, MEASURE_PER_BIN, NUM_BINS
 
         ! Read parameters from parameter file

@@ -1,0 +1,15 @@
+&params
+FILEPATH="/mnt/users/twaitesk/SUN/field_configs/"
+FILENAME="config'
+NCOL=2
+LS=40
+LT=40
+BETA=12.0
+CONFIG_STEP=50
+CONFIG_START=1
+BARE_MASS=0.3
+TOL_CG=1e-2
+TOL_SVD=1e-8
+MEASURE_PER_BIN=1000
+NUM_BINS=5
+/
