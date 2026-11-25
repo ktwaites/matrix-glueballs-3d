@@ -37,7 +37,77 @@ module linalg
         module procedure trace_complex64
     end interface
 
+    interface print_matrix
+        module procedure print_matrix_real32
+        module procedure print_matrix_complex32
+        module procedure print_matrix_real64
+        module procedure print_matrix_complex64
+    end interface
+
     contains
+
+    ! Print matrix to screen
+    subroutine print_matrix_real32(matrix)
+        implicit none
+        real(real32), dimension(:,:), intent(in) :: matrix
+
+        integer(int32) :: i, j
+
+        do i = 1, size(matrix, dim=1)
+            do j = 1, size(matrix, dim=2)
+                write(6, '(f0.6, 4x)', advance='no') matrix(i,j)
+            enddo
+            print *, ""
+        enddo
+        print *, ""
+    end subroutine
+
+    subroutine print_matrix_complex32(matrix)
+        implicit none
+        complex(real32), dimension(:,:), intent(in) :: matrix
+
+        integer(int32) :: i, j
+
+        do i = 1, size(matrix, dim=1)
+            do j = 1, size(matrix, dim=2)
+                write(6, '(f0.6, a, f0.6, a, 4x)', advance='no') matrix(i,j)%re, "+",&
+                matrix(i,j)%im, "i"
+            enddo
+            print *, ""
+        enddo
+        print *, ""
+    end subroutine
+
+    subroutine print_matrix_real64(matrix)
+        implicit none
+        real(real64), dimension(:,:), intent(in) :: matrix
+
+        integer(int32) :: i, j
+
+        do i = 1, size(matrix, dim=1)
+            do j = 1, size(matrix, dim=2)
+                write(6, '(f0.6, 4x)', advance='no') matrix(i,j)
+            enddo
+            print *, ""
+        enddo
+        print *, ""
+    end subroutine
+
+    subroutine print_matrix_complex64(matrix)
+        implicit none
+        complex(real64), dimension(:,:), intent(in) :: matrix
+
+        integer(int32) :: i, j
+
+        do i = 1, size(matrix, dim=1)
+            do j = 1, size(matrix, dim=2)
+                write(6, '(f0.6, a, f0.6, a, 4x)', advance='no') matrix(i,j)%re, "+",&
+                matrix(i,j)%im, "i"
+            enddo
+            print *, ""
+        enddo
+        print *, ""
+    end subroutine
 
     ! Output hermitian conjugate of matrix
     function hermc_complex32(matrix) result(hermc)
