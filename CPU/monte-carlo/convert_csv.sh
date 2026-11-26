@@ -12,7 +12,8 @@ fi
 
 shopt -s nullglob
 files=(field_config_SU*.csv)
-matched=0
+attempted=0
+failed=0
 
 for file in "${files[@]}"; do
     if [[ ! $file =~ ^field_config_SU([0-9]+)_([0-9]+([.][0-9]+)?)_([0-9]+)x([0-9]+)x([0-9]+)(_[0-9]+)?\.csv$ ]]; then
@@ -36,11 +37,19 @@ for file in "${files[@]}"; do
     fi
 
     printf 'Converting %s\n' "$file"
-    "$converter" "${args[@]}"
-    matched=$((matched + 1))
+    attempted=$((attempted + 1))
+    if ! "$converter" "${args[@]}"; then
+        echo "Conversion failed for $file; continuing with the next file." >&2
+        failed=$((failed + 1))
+    fi
 done
 
-if ((matched == 0)); then
+if ((attempted == 0)); then
     echo "No matching configuration files found." >&2
+    exit 1
+fi
+
+if ((failed > 0)); then
+    echo "$failed of $attempted conversion(s) failed." >&2
     exit 1
 fi
