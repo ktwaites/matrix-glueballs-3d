@@ -1,6 +1,6 @@
 &params
-FILEPATH="/mnt/users/twaitesk/SUN/field_configs/"
-FILENAME="config"
+FILEPATH="/mnt/users/twaitesk/gauge_fields/"
+FILENAME="gauge_field_"
 NCOL=2
 LS=40
 LT=40
