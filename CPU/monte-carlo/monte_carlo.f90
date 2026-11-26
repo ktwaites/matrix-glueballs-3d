@@ -1,6 +1,6 @@
 module monte_carlo
     use matrix_glueball_3d_parameters
-    use linalg, only: hermc, det_2x2, determinant
+    use linalg, only: hermc, det_2x2, determinant, trace
     use lattice, only: move, checkerboard
     use luxury
 
@@ -528,4 +528,37 @@ module monte_carlo
             enddo
         enddo
     end subroutine
+
+    ! Average plaquette
+    function average_plaquette(gauge_field)
+        implicit none
+
+        complex(real32), intent(in) :: gauge_field(NCOL, NCOL, LATTICE_VOLUME, 3)
+        complex(real64) :: average_plaquette
+
+        complex(real64) :: plaquette(NCOL, NCOL)
+        integer(int32) :: n, plane, i, j
+
+        average_plaquette = cmplx(0.0_real64, 0.0_real64, kind=real64)
+        do plane = 1, 3
+            select case(plane)
+            case(1)
+                i = 2; j = 3
+            case(2)
+                i = 3; j = 1
+            case(3)
+                i = 1; j = 2
+            end select
+
+            do n = 1, LATTICE_VOLUME
+                plaquette = matmul(gauge_field(:,:,n,i), &
+                    matmul(gauge_field(:,:,move(n,i,1),j),&
+                    matmul(hermc(gauge_field(:,:,move(n,j,1),i)), &
+                    hermc(gauge_field(:,:,n,j)))))
+                average_plaquette = average_plaquette + trace(plaquette)
+            enddo
+        enddo
+
+        average_plaquette = average_plaquette/(3*LATTICE_VOLUME)
+    end function
 end module
