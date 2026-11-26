@@ -1,8 +1,7 @@
 module monte_carlo
     use matrix_glueball_3d_parameters
-    use elementary_functions
     use linalg, only: hermc, det_2x2, determinant
-    use lattice
+    use lattice, only: move, checkerboard
     use luxury
 
     implicit none

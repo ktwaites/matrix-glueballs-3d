@@ -1,6 +1,6 @@
 module lattice
     use matrix_glueball_3d_parameters
-    use elementary_functions
+    use elementary_functions, only: sgn
 
     implicit none
 
