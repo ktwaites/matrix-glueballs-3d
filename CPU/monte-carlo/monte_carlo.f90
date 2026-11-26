@@ -81,6 +81,10 @@ module monte_carlo
         ! Read gauge field into container
         read(10) gauge_field
         close(10)
+
+        ! Print file gauge field was loaded from
+        write(*, '(a, 4x, a, a)') "[Info][load_gauge_field]", &
+        "Gauge field loaded from file: ", trim(FILEPATH) // trim(gauge_field_filename)
     end subroutine
 
     ! Save gauge field to file
@@ -177,6 +181,10 @@ module monte_carlo
         ! Save gauge field to file
         write(10) gauge_field
         close(10)
+
+        ! Print file gauge field was saved to
+        write(*, '(a, 4x, a, a)') "[Info][save_gauge_field]", &
+        "Gauge field saved to file: ", trim(FILEPATH) // trim(gauge_field_filename)
     end subroutine
 
     ! Setup monte carlo data
