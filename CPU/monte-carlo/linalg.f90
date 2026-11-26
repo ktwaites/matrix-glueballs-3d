@@ -117,7 +117,7 @@ module linalg
     end subroutine
 
     ! Return identity matrix of size nxn and numeric type given by kind
-    function eye_real32(n) result(eye)
+    pure function eye_real32(n) result(eye)
         implicit none
 
         integer(int32), intent(in) :: n
@@ -131,7 +131,7 @@ module linalg
         enddo
     end function
 
-    function eye_complex32(n) result(eye)
+    pure function eye_complex32(n) result(eye)
         implicit none
 
         integer(int32), intent(in) :: n
@@ -145,7 +145,7 @@ module linalg
         enddo
     end function
 
-    function eye_real64(n) result(eye)
+    pure function eye_real64(n) result(eye)
         implicit none
 
         integer(int32), intent(in) :: n
@@ -159,7 +159,7 @@ module linalg
         enddo
     end function
 
-    function eye_complex64(n) result(eye)
+    pure function eye_complex64(n) result(eye)
         implicit none
 
         integer(int32), intent(in) :: n
@@ -174,7 +174,7 @@ module linalg
     end function
 
     ! Output hermitian conjugate of matrix
-    function hermc_complex32(matrix) result(hermc)
+    pure function hermc_complex32(matrix) result(hermc)
         implicit none
         complex(real32), intent(in) :: matrix(:,:)
         complex(real32) :: hermc(size(matrix, dim=1), size(matrix, dim=2))
@@ -182,7 +182,7 @@ module linalg
         hermc = conjg(transpose(matrix))
     end function
 
-    function hermc_complex64(matrix) result(hermc)
+    pure function hermc_complex64(matrix) result(hermc)
         implicit none
         complex(real64), intent(in) :: matrix(:,:)
         complex(real64) :: hermc(size(matrix, dim=1), size(matrix, dim=2))
@@ -191,7 +191,7 @@ module linalg
     end function
 
     ! Calculate normalised trace of matrix
-    function trace_real32(matrix) result(trace)
+    pure function trace_real32(matrix) result(trace)
         implicit none
         real(real32), intent(in) :: matrix(:,:)
         real(real32) :: trace
@@ -206,7 +206,7 @@ module linalg
         trace = trace / real(n, kind=real32)
     end function
 
-    function trace_real64(matrix) result(trace)
+    pure function trace_real64(matrix) result(trace)
         implicit none
         real(real64), intent(in) :: matrix(:,:)
         real(real64) :: trace
@@ -221,7 +221,7 @@ module linalg
         trace = trace / real(n, kind=real64)
     end function
 
-    function trace_complex32(matrix) result(trace)
+    pure function trace_complex32(matrix) result(trace)
         implicit none
         complex(real32), intent(in) :: matrix(:,:)
         complex(real32) :: trace
@@ -236,7 +236,7 @@ module linalg
         trace = trace / real(n, kind=real32)
     end function
 
-    function trace_complex64(matrix) result(trace)
+    pure function trace_complex64(matrix) result(trace)
         implicit none
         complex(real64), intent(in) :: matrix(:,:)
         complex(real64) :: trace
@@ -396,7 +396,7 @@ module linalg
     end function solve_linear_system_complex64
 
     ! Calculate determinant of 2x2 matrix
-    function det_2x2_real32(A) result(det)
+    pure function det_2x2_real32(A) result(det)
         implicit none
 
         real(real32), intent(in) :: A(2,2)
@@ -405,7 +405,7 @@ module linalg
         det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
     end function
 
-    function det_2x2_complex32(A) result(det)
+    pure function det_2x2_complex32(A) result(det)
         implicit none
 
         complex(real32), intent(in) :: A(2,2)
@@ -414,7 +414,7 @@ module linalg
         det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
     end function
 
-    function det_2x2_real64(A) result(det)
+    pure function det_2x2_real64(A) result(det)
         implicit none
 
         real(real64), intent(in) :: A(2,2)
@@ -423,7 +423,7 @@ module linalg
         det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
     end function
 
-    function det_2x2_complex64(A) result(det)
+    pure function det_2x2_complex64(A) result(det)
         implicit none
 
         complex(real64), intent(in) :: A(2,2)
@@ -557,7 +557,7 @@ module linalg
     end function determinant_complex64
 
     ! Return a list of evenly spaced real numbers in the interval [start, stop]
-    function linspace(start, stop, num)
+    pure function linspace(start, stop, num)
         implicit none
 
         real(8), intent(in) :: start, stop
