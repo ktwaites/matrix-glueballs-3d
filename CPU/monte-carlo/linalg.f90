@@ -116,6 +116,63 @@ module linalg
         print *, ""
     end subroutine
 
+    ! Return identity matrix of size nxn and numeric type given by kind
+    function eye_real32(n) result(eye)
+        implicit none
+
+        integer(int32), intent(in) :: n
+        real(real32) :: eye(n,n)
+
+        integer(int32) :: i
+
+        eye = 0.0_real32
+        do i = 1, n
+            eye(i,i) = 1.0_real32
+        enddo
+    end function
+
+    function eye_complex32(n) result(eye)
+        implicit none
+
+        integer(int32), intent(in) :: n
+        complex(real32) :: eye(n,n)
+
+        integer(int32) :: i
+
+        eye = cmplx(0.0_real32, 0.0_real32, kind=real32)
+        do i = 1, n
+            eye(i,i) = cmplx(1.0_real32, 0.0_real32, kind=real32)
+        enddo
+    end function
+
+    function eye_real64(n) result(eye)
+        implicit none
+
+        integer(int32), intent(in) :: n
+        real(real64) :: eye(n,n)
+
+        integer(int32) :: i
+
+        eye = 0.0_real64
+        do i = 1, n
+            eye(i,i) = 1.0_real64
+        enddo
+    end function
+
+    function eye_complex64(n) result(eye)
+        implicit none
+
+        integer(int32), intent(in) :: n
+        complex(real64) :: eye(n,n)
+
+        integer(int32) :: i
+
+        eye = cmplx(0.0_real64, 0.0_real64, kind=real64)
+        do i = 1, n
+            eye(i,i) = cmplx(1.0_real64, 0.0_real64, kind=real64)
+        enddo
+    end function
+
     ! Output hermitian conjugate of matrix
     function hermc_complex32(matrix) result(hermc)
         implicit none
