@@ -1,6 +1,7 @@
 module monte_carlo
     use matrix_glueball_3d_parameters
     use elementary_functions
+    use linalg, only: hermc, det_2x2, determinant
     use lattice
     use luxury
 
@@ -217,5 +218,315 @@ module monte_carlo
 
         ! Load gauge field
         call load_gauge_field(gauge_field)
+    end subroutine
+
+
+    ! ------------------------------------- Monte Carlo step functions ------------------------------------- !
+
+    ! Find staples to a given link (n, mu)
+    function find_staples(n, mu, links)
+        implicit none
+
+        integer(int32), intent(in) :: n, mu
+        complex(real32), dimension(NCOL, NCOL, LATTICE_VOLUME, 3), intent(in) :: links
+
+        complex(real32), dimension(NCOL, NCOL, 4) :: find_staples
+
+        integer(int32) :: i, j, ni, nj, nk, n_i, n_j
+
+        select case (mu)
+        case(1)
+            i = 2; j = 3
+        case(2)
+            i = 3; j = 1
+        case(3)
+            i = 1; j = 2
+        case default
+            error stop "Error: Invalid mu in action_change"
+        end select
+
+        ni = move(n,i,1)
+        nj = move(n,j,1)
+        nk = move(n,mu,1)
+        n_i = move(n,i,-1)
+        n_j = move(n,j,-1)
+
+        ! Find staples to link (n,mu)
+        find_staples(:,:,1) = matmul(links(:,:,nk,i), matmul(hermc(links(:,:,ni,mu)), hermc(links(:,:,n,i))))
+        find_staples(:,:,2) = matmul(links(:,:,nk,j), matmul(hermc(links(:,:,nj,mu)), hermc(links(:,:,n,j))))
+        find_staples(:,:,3) = matmul(hermc(links(:,:,move(n_i,mu,1),i)), matmul(hermc(links(:,:,n_i,mu)),&
+        links(:,:,n_i,i)))
+        find_staples(:,:,4) = matmul(hermc(links(:,:,move(n_j,mu,1),j)), matmul(hermc(links(:,:,n_j,mu)),&
+        links(:,:,n_j,j)))
+    end function
+
+    ! Perform heatbath algorithm, given 2x2 input matrix w (W = U*Sigma)
+    function heatbath_subgroup(w) result(a)
+        implicit none
+
+        complex(real32), dimension(2,2), intent(in) :: w
+        complex(real32), dimension(2,2) :: a
+
+        real(real32), dimension(0:3) :: chi_pauli
+        complex(real32), dimension(2,2) :: w_hat, chi
+        real(real32) :: w_hat_normalisation, rho, trial_sample, gauss_sample, exp_sample
+        real(real32), dimension(6) :: random_numbers
+        real(real32), dimension(3) :: sphere_vector
+
+        ! Make an SU(2) variable out of w. Store this in w_hat.
+        w_hat(1,1) = w(1,1) + conjg(w(2,2))
+        w_hat(2,1) = w(2,1) - conjg(w(1,2))
+        w_hat(1,2) = -conjg(w_hat(2,1))
+        w_hat(2,2) = conjg(w_hat(1,1))
+        w_hat_normalisation = sqrt((abs(w_hat(1,1)))**2 + (abs(w_hat(1,2)))**2)
+        w_hat = w_hat/w_hat_normalisation
+        w_hat_normalisation = w_hat_normalisation/2.0
+
+        ! Define rho
+        rho = 2.0*beta*w_hat_normalisation/NCOL
+
+        ! Take 6 random numbers
+        call ranlux(random_numbers, 6)
+
+        !! Sample from a_0 distribution
+        do
+            ! Sample from Gaussian distribution
+            gauss_sample = sqrt(-log(1.0-random_numbers(1)))*cos(real(PI, kind=real32)*random_numbers(2)/2.0)
+
+            ! Sample from exponential ditribution
+            exp_sample = -log(1.0-random_numbers(3))
+
+            ! Construct trial sample
+            trial_sample = gauss_sample**2 + exp_sample
+
+            ! Test if trial sample is accepted
+            if (2.0*random_numbers(4)**2 <= 2.0-trial_sample/rho) exit
+
+            !! If the program has progressed here, the trial was rejected.
+            ! Re-randomize the 3rd and 4th random numbers
+            call ranlux(random_numbers(3:4), 2)
+
+            ! Re-sample from Gaussian distribution
+            gauss_sample = sqrt(-log(1.0-random_numbers(1)))*sin(real(PI, kind=real32)*random_numbers(2)/2.0)
+
+            ! Re-sample from exponential ditribution
+            exp_sample = -log(1.0-random_numbers(3))
+
+            ! Reconstruct trial sample
+            trial_sample = gauss_sample**2 + exp_sample
+
+            ! Test if trial sample is accepted
+            if (2.0*random_numbers(4)**2 <= 2.0-trial_sample/rho) exit
+
+            !! If the program has progessed here, both samples have been rejected.
+            ! Re-randomize all 4 random numbers used and start again
+            call ranlux(random_numbers(1:4), 4)
+        enddo
+
+        !! Sample vector from the surface of a 2-sphere
+        sphere_vector(1) = 1.0 - 2.0*random_numbers(5)
+        sphere_vector(2) = sqrt(1.0-sphere_vector(1)**2)*cos(2.0*real(PI, kind=real32)*random_numbers(6))
+        sphere_vector(3) = sqrt(1.0-sphere_vector(1)**2)*sin(2.0*real(PI, kind=real32)*random_numbers(6))
+
+        ! Undo transformations to find coefficients for v
+        chi_pauli(0) = 1.0 - trial_sample/rho
+        chi_pauli(1:3) = sqrt(1.0-chi_pauli(0)**2)*sphere_vector
+        ! print *, "Chi (pauli rep.): ", chi_pauli
+
+        ! Put v into matrix form using Pauli matrices
+        chi(1,1) = cmplx(chi_pauli(0),chi_pauli(3))
+        chi(2,1) = cmplx(-chi_pauli(2),chi_pauli(1))
+        chi(1,2) = cmplx(chi_pauli(2),chi_pauli(1))
+        chi(2,2) = cmplx(chi_pauli(0),-chi_pauli(3))
+
+        ! Update a using a = v*w_hat
+        a = matmul(chi, conjg(transpose(w_hat)))
+    end function
+
+    ! Perform overrelaxation algorithm, given 2x2 input matrix w (W = U*Sigma)
+    function overrelaxation_subgroup(w) result(a)
+        implicit none
+
+        complex(real32), dimension(2,2), intent(in) :: w
+        complex(real32), dimension(2,2) :: a
+
+        real(real32) :: w_pauli
+
+        ! Extract real part of the Pauli coefficient 0 of w
+        w_pauli = w(1,1)%re + w(2,2)%re
+
+        ! Construct a as v in textbook
+        a(1,1) = conjg(w(1,1)) + w(2,2)
+        a(2,1) = conjg(w(1,2)) - w(2,1)
+        a(1,2) = -conjg(a(2,1))
+        a(2,2) = conjg(a(1,1))
+
+        ! Correct to form SU(2) variable
+        a = 2*w_pauli*a/det_2x2(a)
+        a(1,1) = a(1,1) - cmplx(1.0,0.0)
+        a(2,2) = a(2,2) - cmplx(1.0,0.0)
+    end function
+
+    ! Find staples and iterate SU(2) procedure over SU(2) subgroups of SU(N)
+    subroutine monte_carlo_step(n, mu, links, algorithm)
+        implicit none
+
+        interface
+            function algorithm(w) result(a)
+                use iso_fortran_env, only: real32
+                use luxury
+                implicit none
+                complex(real32), dimension(2,2), intent(in) :: w
+                complex(real32), dimension(2,2) :: a
+            end function
+        end interface
+
+        integer(int32), intent(in) :: n, mu
+        complex(real32), dimension(NCOL, NCOL, LATTICE_VOLUME, 3), intent(inout) :: links
+
+        complex(real32), dimension(NCOL, NCOL, 4) :: staples
+        complex(real32), dimension(NCOL, NCOL) :: Sigma, U
+        complex(real32), dimension(2,2) :: w_SU2, a_SU2
+        complex(real32), dimension(2, NCOL) :: U_prime
+        integer(int32) :: i, j, k
+
+        ! Find staples to link (n, mu)
+        staples = find_staples(n, mu, links)
+
+        ! Sum staples and multiply by U(n,mu) to find W
+        U = links(:,:,n,mu)
+        Sigma = cmplx(0.0,0.0)
+        do k = 1, 4
+            Sigma = Sigma + staples(:,:,k)
+        enddo
+
+        !! Iterate through SU(2) subgroups
+        do j = 1, NCOL
+            do i = 1, j-1
+                ! (i,j) give indices of SU(2) subgroups in SU(N) matrices
+                ! elements are located at (i,i), (i,j), (j,i) and (j,j)
+
+                ! Update W and real(PI, kind=real32)ck out SU(2) subgroup
+                w_SU2 = cmplx(0.0,0.0)
+                do k = 1, NCOL
+                    w_SU2(1,1) = w_SU2(1,1) + U(i,k)*Sigma(k,i)
+                    w_SU2(2,1) = w_SU2(2,1) + U(j,k)*Sigma(k,i)
+                    w_SU2(1,2) = w_SU2(1,2) + U(i,k)*Sigma(k,j)
+                    w_SU2(2,2) = w_SU2(2,2) + U(j,k)*Sigma(k,j)
+                enddo
+
+                ! Carry out Monte Carlo procedure on this SU(2) subgroup
+                a_SU2 = algorithm(w_SU2)
+
+                ! Find new link matrix using U' = AU
+                U_prime(1,:) = a_SU2(1,1)*U(i,:) + a_SU2(1,2)*U(j,:)
+                U_prime(2,:) = a_SU2(2,1)*U(i,:) + a_SU2(2,2)*U(j,:)
+                U(i,:) = U_prime(1,:)
+                U(j,:) = U_prime(2,:)
+            enddo
+        enddo
+
+        links(:,:,n,mu) = U
+    end subroutine
+
+    ! Conduct a full sweep of the lattice (paralelliseable)
+    subroutine sweep(links, sequence, algorithm)
+        implicit none
+
+        interface
+            function algorithm(w) result(a)
+                use iso_fortran_env, only: real32
+                use luxury
+                implicit none
+                complex(real32), dimension(2,2), intent(in) :: w
+                complex(real32), dimension(2,2) :: a
+            end function
+        end interface
+
+        integer(int32), dimension(LATTICE_VOLUME), intent(in) :: sequence
+        complex(real32), dimension(NCOL, NCOL, LATTICE_VOLUME, 3), intent(inout) :: links
+
+        integer(int32) :: i, direction
+
+        ! Sweep over lattice according to sequence defined
+        do direction = 1, 3
+            do i = 1, LATTICE_VOLUME
+                call monte_carlo_step(sequence(i), direction, links, algorithm)
+            enddo
+        enddo
+    end subroutine
+
+    ! Conduct 1 heatbath sweep followed by several overrelaxation sweeps
+    subroutine compound_sweep(links, sequence)
+        implicit none
+        integer(int32), dimension(LATTICE_VOLUME), intent(in) :: sequence
+        complex(real32), dimension(NCOL, NCOL, LATTICE_VOLUME, 3), intent(inout) :: links
+
+        integer(int32) :: i
+
+        ! Conduct heatbath sweep
+        call sweep(links, sequence, heatbath_subgroup)
+
+        ! Conduct L/2a overrelaxation sweeps
+        do i = 1, 3
+            call sweep(links, sequence, overrelaxation_subgroup)
+        enddo
+    end subroutine
+
+    ! Renormalise 2x2 matrix to lie in SU(2)
+    subroutine renormalise_SU2(w)
+        implicit none
+        complex(real32), dimension(2,2), intent(out) :: w
+
+        complex(real32), dimension(2,2) :: w_hat
+        real(real32) :: w_hat_normalisation
+
+        ! Make an SU(2) variable out of w
+        w_hat(1,1) = w(1,1) + conjg(w(2,2))
+        w_hat(2,1) = w(2,1) - conjg(w(1,2))
+        w_hat(1,2) = -conjg(w_hat(2,1))
+        w_hat(2,2) = conjg(w_hat(1,1))
+        w_hat_normalisation = sqrt((abs(w_hat(1,1)))**2 + (abs(w_hat(1,2)))**2)
+        w = w_hat/w_hat_normalisation
+    end subroutine
+
+    ! Renormalise links to remain in SU(N) using Gram-Schmidt
+    subroutine renormalise_links_Gram_Schmidt(links)
+        complex(real32), dimension(NCOL, NCOL, LATTICE_VOLUME, 3), intent(out) :: links
+
+        complex(real32), dimension(NCOL, NCOL) :: U
+        complex(real32), dimension(NCOL) :: orthogonal_vector, input_vector
+        complex(real32) :: det
+        integer(int32) :: n, mu, i, j
+
+        do mu = 1, 3
+            do n = 1, LATTICE_VOLUME
+                !! Use Gram-Schmidt to orthonormalise columns
+                ! Make columns of U orthogonal
+                do j = 1, NCOL
+                    input_vector = links(:,j,n,mu)
+                    orthogonal_vector = input_vector
+
+                    ! Subtract projections of other orthogonal vectors (columns of U) from vector
+                    do i = 1, j-1
+                        ! orthogonal_vector = orthogonal_vector - &
+                        ! (dot_product(input_vector,U(:,i))/dot_product(U(:,i),U(:,i)))*U(:,i)
+                        orthogonal_vector = orthogonal_vector - dot_product(U(:,i), orthogonal_vector)*U(:,i)
+                    enddo
+
+                    ! Set column of U as new orthogonal vector
+                    U(:,j) = orthogonal_vector/sqrt(real(dot_product(orthogonal_vector, orthogonal_vector)))
+                enddo
+
+                ! Orthonormalise columns by multiplying U by phase
+                det = determinant(U)
+                det = det/abs(det) ! ensure det(U) is a phase as expected
+                ! Scale U to force det(U) = 1 whilst maintaining unitarity
+                U = U/(det**(1.0/real(NCOL)))
+
+                ! Replace U in links matrix
+                links(:,:,n,mu) = U
+            enddo
+        enddo
     end subroutine
 end module
