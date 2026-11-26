@@ -25,6 +25,7 @@ for file in "${files[@]}"; do
     ls_second=${BASH_REMATCH[5]}
     lt=${BASH_REMATCH[6]}
     run=${BASH_REMATCH[7]:-}
+    run=${run#_}
 
     # The supported filename form uses the same LS in both spatial dimensions.
     [[ $ls_first == "$ls_second" ]] || continue
