@@ -151,11 +151,11 @@ module monte_carlo
             "n" // trim(file_index) // &
             ".dat"
 
-        ! Check file exists at specified directory
+        ! Check file does not exist at specified directory
         inquire(file = trim(FILEPATH) // trim(gauge_field_filename), exist=file_exists)
-        if (.not. file_exists) then
+        if (file_exists) then
             write(*, '(a, 4x, a)') "[Error][save_gauge_field]", &
-            "Gauge field file could not be found"
+            "Gauge field file already exists"
             write(*, '(a, a)') "File: ", trim(FILEPATH) // trim(gauge_field_filename)
             error stop
         endif

@@ -29,7 +29,11 @@ program convert_csv
     endif
 
     ! Save gauge field to file
-    call save_gauge_field(gauge_field, gauge_field_index=run_id)
+    if (run_passed) then
+        call save_gauge_field(gauge_field, gauge_field_index=run_id)
+    else
+        call save_gauge_field(gauge_field)
+    endif
 
     contains
 
