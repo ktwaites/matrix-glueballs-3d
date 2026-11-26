@@ -18,6 +18,13 @@ module linalg
         module procedure solve_linear_system_complex64
     end interface
 
+    interface det_2x2
+        module procedure det_2x2_real32
+        module procedure det_2x2_complex32
+        module procedure det_2x2_real64
+        module procedure det_2x2_complex64
+    end interface
+
     interface determinant
         module procedure determinant_real32
         module procedure determinant_complex32
@@ -330,6 +337,43 @@ module linalg
             error stop
         endif
     end function solve_linear_system_complex64
+
+    ! Calculate determinant of 2x2 matrix
+    function det_2x2_real32(A) result(det)
+        implicit none
+
+        real(real32), intent(in) :: A(2,2)
+        real(real32) :: det
+
+        det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
+    end function
+
+    function det_2x2_complex32(A) result(det)
+        implicit none
+
+        complex(real32), intent(in) :: A(2,2)
+        complex(real32) :: det
+
+        det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
+    end function
+
+    function det_2x2_real64(A) result(det)
+        implicit none
+
+        real(real64), intent(in) :: A(2,2)
+        real(real64) :: det
+
+        det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
+    end function
+
+    function det_2x2_complex64(A) result(det)
+        implicit none
+
+        complex(real64), intent(in) :: A(2,2)
+        complex(real64) :: det
+
+        det = A(1,1) * A(2,2) - A(1,2) * A(2,1)
+    end function
 
     ! Calculate a real32 determinant using LAPACK routine SGETRF.
     function determinant_real32(A) result(det)
