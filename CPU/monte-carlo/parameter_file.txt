@@ -1,6 +1,6 @@
 &params
 FILEPATH="/mnt/users/twaitesk/SUN/field_configs/"
-FILENAME="config'
+FILENAME="config"
 NCOL=2
 LS=40
 LT=40
