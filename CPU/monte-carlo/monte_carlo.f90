@@ -46,7 +46,7 @@ module monte_carlo
         gauge_field_filename = &
             trim(FILENAME) // &
             trim(file_LS) // "x" // trim(file_LS) // "x" // trim(file_LT) // &
-            "nc" // trim(file_ncol) // &
+            "SU" // trim(file_ncol) // &
             "b" // trim(file_beta) // &
             "n" // trim(file_index) // &
             ".dat"
@@ -107,7 +107,7 @@ module monte_carlo
         gauge_field_filename = &
             trim(FILENAME) // &
             trim(file_LS) // "x" // trim(file_LS) // "x" // trim(file_LT) // &
-            "nc" // trim(file_ncol) // &
+            "SU" // trim(file_ncol) // &
             "b" // trim(file_beta)
         
         ! Determine configuration index to assign to this gauge field by looking for the first missing configuration number, or use value passed
