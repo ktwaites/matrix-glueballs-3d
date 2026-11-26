@@ -26,10 +26,11 @@ module matrix_glueball_3d_parameters
 
     !! Declare dependant parameters
     ! Lattice parameters
-    integer(int32) :: SLICE_VOLUME ! Number of sites in one slice, renamed from LSIZEB
-    integer(int32) :: LATTICE_VOLUME ! Total number of sites, renamed from LSIZE
+    integer(int32) :: SLICE_VOLUME ! Number of sites in one slice
+    integer(int32) :: SLICE_SUBSET_VOLUME ! Number of sites in even/odd subsets on one time slice
+    integer(int32) :: LATTICE_VOLUME ! Total number of sites
     integer(int32) :: NCOL2 ! Square number of colours
-    integer(int32) :: MAX_DELTA_T ! Maximum time extent of correlation functions, renamed from MAXDTLS
+    integer(int32) :: MAX_DELTA_T ! Maximum time extent of correlation functions
 
     ! Monte Carlo parameters
     integer(int32) :: NCONFIG ! Total number of configurations generated during simulation
@@ -53,8 +54,21 @@ module matrix_glueball_3d_parameters
         read(10, params)
         close(10)
 
+        ! Check if lattice has an even size
+        if (mod(LS, 2) /= 0) then
+            write(*, '(a, 4x, a)') "[Error][initialise_parameters]", &
+            "LS must be even"
+            error stop
+        endif
+        if (mod(LT, 2) /= 0) then
+            write(*, '(a, 4x, a)') "[Error][initialise_parameters]", &
+            "LT must be even"
+            error stop
+        endif
+
         ! Set dependant parameters
         SLICE_VOLUME = LS ** 2
+        SLICE_SUBSET_VOLUME = SLICE_VOLUME / 2
         LATTICE_VOLUME = SLICE_VOLUME * LT
         NCOL2 = NCOL * NCOL
         MAX_DELTA_T = LT / 2
