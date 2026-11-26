@@ -20,7 +20,7 @@ module lattice
     contains
 
     ! Populate move with lattice site neighbours
-    subroutine lattice_setup()
+    subroutine setup_lattice()
         implicit none
         integer :: site, mu, step, next
 
