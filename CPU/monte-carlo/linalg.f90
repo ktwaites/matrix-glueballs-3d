@@ -16,6 +16,10 @@ module linalg
         module procedure solve_linear_system_complex32
         module procedure solve_linear_system_real64
         module procedure solve_linear_system_complex64
+        module procedure solve_linear_system_multi_rhs_real32
+        module procedure solve_linear_system_multi_rhs_complex32
+        module procedure solve_linear_system_multi_rhs_real64
+        module procedure solve_linear_system_multi_rhs_complex64
     end interface
 
     interface det_2x2
@@ -394,6 +398,130 @@ module linalg
             error stop
         endif
     end function solve_linear_system_complex64
+
+    ! Solve A X=B with multiple real32 right-hand sides using SGESV.
+    function solve_linear_system_multi_rhs_real32(A, B) result(X)
+        implicit none
+
+        real(real32), intent(in) :: A(:,:), B(:,:)
+        real(real32) :: X(size(B,1), size(B,2))
+        real(real32), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, nrhs, info
+
+        n = size(A,1)
+        nrhs = size(B,2)
+        if (n < 1 .or. size(A,2) /= n) &
+            error stop "[Error][solve_linear_system]    A must be a non-empty square matrix"
+        if (size(B,1) /= n .or. nrhs < 1) &
+            error stop "[Error][solve_linear_system]    B must have shape (n,k), with k >= 1"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        X = B
+        call SGESV(n, nrhs, Acopy, n, ipiv, X, n, info)
+        if (info /= 0) then
+            if (info < 0) then
+                write(*,'(a,i0)') '[Error][solve_linear_system]    SGESV: illegal argument ', -info
+            else
+                write(*,'(a,i0,a,i0,a)') '[Error][solve_linear_system]    SGESV: U(', info, ',', info, ') is zero'
+            endif
+            error stop
+        endif
+    end function solve_linear_system_multi_rhs_real32
+
+    ! Solve A X=B with multiple complex32 right-hand sides using CGESV.
+    function solve_linear_system_multi_rhs_complex32(A, B) result(X)
+        implicit none
+
+        complex(real32), intent(in) :: A(:,:), B(:,:)
+        complex(real32) :: X(size(B,1), size(B,2))
+        complex(real32), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, nrhs, info
+
+        n = size(A,1)
+        nrhs = size(B,2)
+        if (n < 1 .or. size(A,2) /= n) &
+            error stop "[Error][solve_linear_system]    A must be a non-empty square matrix"
+        if (size(B,1) /= n .or. nrhs < 1) &
+            error stop "[Error][solve_linear_system]    B must have shape (n,k), with k >= 1"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        X = B
+        call CGESV(n, nrhs, Acopy, n, ipiv, X, n, info)
+        if (info /= 0) then
+            if (info < 0) then
+                write(*,'(a,i0)') '[Error][solve_linear_system]    CGESV: illegal argument ', -info
+            else
+                write(*,'(a,i0,a,i0,a)') '[Error][solve_linear_system]    CGESV: U(', info, ',', info, ') is zero'
+            endif
+            error stop
+        endif
+    end function solve_linear_system_multi_rhs_complex32
+
+    ! Solve A X=B with multiple real64 right-hand sides using DGESV.
+    function solve_linear_system_multi_rhs_real64(A, B) result(X)
+        implicit none
+
+        real(real64), intent(in) :: A(:,:), B(:,:)
+        real(real64) :: X(size(B,1), size(B,2))
+        real(real64), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, nrhs, info
+
+        n = size(A,1)
+        nrhs = size(B,2)
+        if (n < 1 .or. size(A,2) /= n) &
+            error stop "[Error][solve_linear_system]    A must be a non-empty square matrix"
+        if (size(B,1) /= n .or. nrhs < 1) &
+            error stop "[Error][solve_linear_system]    B must have shape (n,k), with k >= 1"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        X = B
+        call DGESV(n, nrhs, Acopy, n, ipiv, X, n, info)
+        if (info /= 0) then
+            if (info < 0) then
+                write(*,'(a,i0)') '[Error][solve_linear_system]    DGESV: illegal argument ', -info
+            else
+                write(*,'(a,i0,a,i0,a)') '[Error][solve_linear_system]    DGESV: U(', info, ',', info, ') is zero'
+            endif
+            error stop
+        endif
+    end function solve_linear_system_multi_rhs_real64
+
+    ! Solve A X=B with multiple complex64 right-hand sides using ZGESV.
+    function solve_linear_system_multi_rhs_complex64(A, B) result(X)
+        implicit none
+
+        complex(real64), intent(in) :: A(:,:), B(:,:)
+        complex(real64) :: X(size(B,1), size(B,2))
+        complex(real64), allocatable :: Acopy(:,:)
+        integer, allocatable :: ipiv(:)
+        integer :: n, nrhs, info
+
+        n = size(A,1)
+        nrhs = size(B,2)
+        if (n < 1 .or. size(A,2) /= n) &
+            error stop "[Error][solve_linear_system]    A must be a non-empty square matrix"
+        if (size(B,1) /= n .or. nrhs < 1) &
+            error stop "[Error][solve_linear_system]    B must have shape (n,k), with k >= 1"
+
+        allocate(Acopy(n,n), ipiv(n))
+        Acopy = A
+        X = B
+        call ZGESV(n, nrhs, Acopy, n, ipiv, X, n, info)
+        if (info /= 0) then
+            if (info < 0) then
+                write(*,'(a,i0)') '[Error][solve_linear_system]    ZGESV: illegal argument ', -info
+            else
+                write(*,'(a,i0,a,i0,a)') '[Error][solve_linear_system]    ZGESV: U(', info, ',', info, ') is zero'
+            endif
+            error stop
+        endif
+    end function solve_linear_system_multi_rhs_complex64
 
     ! Calculate determinant of 2x2 matrix
     pure function det_2x2_real32(A) result(det)
