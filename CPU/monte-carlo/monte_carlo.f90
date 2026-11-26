@@ -178,4 +178,44 @@ module monte_carlo
         write(10) gauge_field
         close(10)
     end subroutine
+
+    ! Setup monte carlo data
+    subroutine setup_monte_carlo(gauge_field, sweep_sequence, random_start, offset)
+        implicit none
+
+        complex(real32), intent(out) :: gauge_field(NCOL, NCOL, LATTICE_VOLUME, 3)
+        integer(int32), intent(out) :: sweep_sequence(LATTICE_VOLUME)
+        logical, intent(in), optional :: random_start
+        integer(int32), intent(in), optional :: offset
+
+        logical :: random_start_
+
+        ! Default ranlux generator to a random seed using system clock
+        if (present(random_start)) then
+            random_start_ = random_start
+        else
+            random_start_ = .true.
+        endif
+
+        ! Initialise ranlux generator
+        if (random_start_) then
+            if (present(offset)) then
+                call initialise_ranlux(offset)
+            else
+                call initialise_ranlux()
+            endif
+        else
+            if (present(offset)) then
+                call rluxgo(3, 314159265+offset, 0, 0)
+            else
+                call rluxgo(3, 314159265, 0, 0)
+            endif
+        endif
+
+        ! Define sweep sequence used in Monte Carlo sweeps
+        sweep_sequence = checkerboard()
+
+        ! Load gauge field
+        call load_gauge_field(gauge_field)
+    end subroutine
 end module
