@@ -8,9 +8,11 @@ COMMON_OBJECTS = $(BUILD_DIR)/matrix-glueball-3d-parameters.o \
                  $(BUILD_DIR)/linalg.o $(BUILD_DIR)/ranlux.o \
                  $(BUILD_DIR)/lattice.o $(BUILD_DIR)/monte_carlo.o
 
-.PHONY: all clean
+.PHONY: all modules clean
 
 all: save_frozen thermalise convert_csv
+
+modules: $(COMMON_OBJECTS)
 
 save_frozen: $(BUILD_DIR)/frozen_field.o $(COMMON_OBJECTS)
 	$(FC) $(FFLAGS) -o $@ $^ $(LDLIBS)
