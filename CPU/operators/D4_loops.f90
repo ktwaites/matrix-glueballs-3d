@@ -7,14 +7,27 @@ module D4_loops
     implicit none
 
     complex(real64), allocatable :: momentum_phase(:,:,:)
+    integer(int32) :: multiply_D4_elements(8,8)
 
     contains
 
+    ! Setup function for loop calculations
     ! Pre-calculate all momentum phases to be used in momentum sums
-    subroutine setup_momentum()
+    ! Assign D4 group multiplication table elements
+    ! table(i, j) = g(i) * g(j)
+    ! Group element indices:
+    !  * g=1 -> id
+    !  * g=2 -> R
+    !  * g=3 -> R2
+    !  * g=4 -> R3
+    !  * g=5 -> P
+    !  * g=6 -> PR
+    !  * g=7 -> PR2
+    !  * g=8 -> PR3
+    subroutine setup_loops()
         implicit none
 
-        integer :: q, x
+        integer(int32) :: q, x, Id(2,2), R(2,2), P(2,2), result(2,2), group_elements(2,2,8), i, j, k
 
         ! Allocate momentum phases array
         allocate(momentum_phase(0:LS-1, 0:LS-1, -(LS/2 - 1) : LS/2))
@@ -26,6 +39,47 @@ module D4_loops
                 momentum_phase(x, :, q) &
                 = exp_phase(2.0_real64 * PI * real(q, kind=real64) * real(x, kind=real64) &
                 / real(LS, kind=real64))
+            enddo
+        enddo
+
+        !! Define D4 group multiplication table by explicitely multiplying matrices
+        ! Define group elements
+        Id(1, :) = [1, 0]
+        Id(2, :) = [0, 1]
+        R(1, :) = [0, -1]
+        R(2, :) = [1, 0]
+        P(1, :) = [-1, 0]
+        P(2, :) = [0, 1]
+        group_elements(:,:,1) = Id
+        group_elements(:,:,2) = R
+        group_elements(:,:,3) = matmul(R, R)
+        group_elements(:,:,4) = matmul(R, matmul(R, R))
+        group_elements(:,:,5) = P
+        group_elements(:,:,6) = matmul(P, R)
+        group_elements(:,:,7) = matmul(P, matmul(R, R))
+        group_elements(:,:,8) = matmul(P, matmul(R, matmul(R, R)))
+
+        ! Multiply group elements and compare with look-up table to find index
+        do j = 1, 8
+            do i = 1, 8
+                ! result = g(i) * g(j)
+                result = matmul(group_elements(:,:,i), group_elements(:,:,j))
+
+                ! Compare with group elements to find what group element this is
+                multiply_D4_elements(i, j) = 0
+                do k = 1, 8
+                    if (all(result == group_elements(:,:,k))) then
+                        multiply_D4_elements(i, j) = k
+                        exit
+                    endif
+                enddo
+                
+                ! Check a group element was found
+                if (multiply_D4_elements(i, j) == 0) then
+                    write(*, '(a, 4x, a)') "[Error][setup_loops]", &
+                    "Product of group elements not found in list of group elements"
+                    error stop
+                endif
             enddo
         enddo
     end subroutine
@@ -53,36 +107,6 @@ module D4_loops
     !    vertex_coordinates
     !
     ! -----------------------------------------------------------------------------------------------------  !
-
-    ! Helper function - calculate matrix operator between given coordinates
-    pure function single_loop(coordinates, num_sites, propagator_matrix)
-        implicit none
-        integer(int32), intent(in) :: coordinates(2, num_sites), num_sites
-        complex(real32), intent(in) :: propagator_matrix(NCOL, NCOL, SLICE_VOLUME, SLICE_VOLUME)
-        complex(real64) :: single_loop
-
-        integer(int32) :: coords(2, num_sites), sites(num_sites), i
-        complex(real64) :: loop_matrix(NCOL, NCOL)
-
-        ! Ensure coordinates lie in the range [1, LS]
-        coords = periodic(coordinates)
-
-        ! Convert vertex coordinates to site indices
-        do i = 1, num_sites
-            sites(i) = site_index(coords(:, i))
-        enddo
-
-        ! Initialise matrix as propagator from last site to first site
-        loop_matrix = cmplx(propagator_matrix(:, :, sites(num_sites), sites(1)), kind=real64)
-
-        ! Multiply matrices in path-order around the loop
-        do i = 1, num_sites-1
-            loop_matrix = matmul(loop_matrix, propagator_matrix(:, :, sites(i), sites(i+1)))
-        enddo
-
-        ! Trace over total propagator matrix to define operator phi[n](x, g)
-        single_loop = trace(loop_matrix)
-    end function
 
     ! Calculate all translations and symmetry transformations of a given matrix operator defined through vertex_coordinates
     function loop_propagator(vertex_coordinates, propagator_matrix, calculate_loop) result(phi)
@@ -166,6 +190,64 @@ module D4_loops
                 ! Set loop to zero as it will not be used
                 phi(x, y, g) = 0.0_real64
             endif
+        enddo
+    end function
+
+
+    ! ------------------------------------------ Loop degeneracies ------------------------------------------ !
+    !
+    ! There are two types of loop degeneracy we must find:
+    !  * Intra-loop: degeneracies between transformations of the same loop. These affect which states a given
+    !    loop will project onto, and the weighting each symmetry transformation should be given when
+    !    constructing states from that loop
+    !  * Inter-loop: degeneracies between different loops. We say two loops are degenerate with each other if
+    !    one is a symmetry transformation of the other. These affect which loops should be included in the
+    !    operator basis for a given state, as degenerate loops will lead to a singular correlation matrix.
+    !
+    ! ------------------------------------------------------------------------------------------------------- !
+
+    ! Check two loops are close to each other
+    pure function is_close(x, y)
+        implicit none
+        complex(real64), intent(in) :: x, y
+        logical :: is_close
+
+        is_close = (abs(y - x) < 1e-12)
+    end function
+
+    ! Determine which sets of loops are degenerate with each other
+    ! phi(g) = \sum_{x,y} loop_propagator(x,y,g) 
+    function interloop_degeneracy(phi) result(distinct_loops)
+        implicit none
+        complex(real64), intent(in) :: phi(:,:)
+        logical :: distinct_loops(size(phi, dim=2))
+
+        integer(int32) :: num_sets_loops, i, j, g, g_prime
+        logical :: loop_equivilance_matrix(8,8)
+
+        ! Get number of sets of loops
+        num_sets_loops = size(phi, dim=2)
+
+        ! Default all loops to be distinct from one another
+        distinct_loops = .true.
+
+        ! Compare loop j with all previous loops. If it is equivilant to any previous loop, distinct_loops(j) is set to false
+        do j = 2, num_sets_loops
+            do i = 1, j-1
+                ! Compute the logical matrix with elements g, g' as true if phi(g, i) = phi(gg', j) and false otherwise
+                do concurrent (g = 1:8, g_prime = 1:8)
+                    loop_equivilance_matrix(g, g_prime) = is_close(&
+                        phi(g, i), &
+                        phi(multiply_D4_elements(g, g_prime), j)&
+                    )
+                enddo
+
+                ! Loops phi(i) and phi(j) are defined as equivilant if there exists a g' such that phi(g, i) = phi(gg', j) for all g. This means phi(i) and phi(j) are equivilant if the logical matrix contains a column where all elements are true.
+                if (any(all(loop_equivilance_matrix, dim=1))) then
+                    distinct_loops(j) = .false.
+                    exit
+                endif
+            enddo
         enddo
     end function
 end module D4_loops
