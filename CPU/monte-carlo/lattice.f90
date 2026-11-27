@@ -104,7 +104,7 @@ module lattice
     end function
 
     ! Implement periodic boundary conditions in coordinates
-    elemental function periodic(n)
+    pure elemental function periodic(n)
         implicit none
 
         integer, intent(in) :: n
@@ -114,7 +114,7 @@ module lattice
     end function
 
     ! Return site index from coordinates
-    function site_index(coordinates)
+    pure function site_index(coordinates)
         implicit none
 
         integer, intent(in) :: coordinates(2)
@@ -124,7 +124,7 @@ module lattice
     end function
 
     ! Return site coordinates from index
-    function site_coordinates(index)
+    pure function site_coordinates(index)
         implicit none
 
         integer, intent(in) :: index
